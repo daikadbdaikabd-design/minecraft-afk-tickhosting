@@ -8,8 +8,8 @@ function startBot() {
   console.log("Đang khởi động bot...")
 
   bot = mineflayer.createBot({
-    host: "darkblademc.mcsh.io",
-    port: 14488,
+    host: "darkblademc.falix.dev",
+    port: 21985,
     username: "_HuuThien_",
     version: "1.21.1"
   })
