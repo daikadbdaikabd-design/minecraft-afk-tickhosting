@@ -54,12 +54,12 @@ function startBot() {
 
     if (text.includes("/register")) {
       console.log("Đăng ký tài khoản...")
-      bot.chat(`/register ${PASSWORD} ${PASSWORD}`)
+      bot.chat(`/register ${thien24092012} ${thien24092012}`)
     }
 
     if (text.includes("/login")) {
       console.log("Đăng nhập...")
-      bot.chat(`/login ${PASSWORD}`)
+      bot.chat(`/login ${thien24092012}`)
     }
 
   })
