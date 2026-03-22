@@ -1,7 +1,8 @@
 const mineflayer = require("mineflayer")
 const express = require("express")
 
-let bot = null
+let bot
+let afkInterval
 
 function startBot() {
 
@@ -19,17 +20,32 @@ function startBot() {
   })
 
   bot.on("spawn", () => {
+
     console.log("Bot đã vào world")
 
-    // chống AFK: nhảy mỗi 1s
-    setInterval(() => {
+    // auto login
+    setTimeout(() => {
+      bot.chat("/login 123456")
+    }, 3000)
+
+    // auto register nếu cần
+    setTimeout(() => {
+      bot.chat("/register 123456 123456")
+    }, 5000)
+
+    if (afkInterval) clearInterval(afkInterval)
+
+    // chống AFK
+    afkInterval = setInterval(() => {
 
       if (!bot.entity) return
 
       bot.setControlState("jump", true)
 
-      // xoay đầu random
-      bot.look(Math.random() * Math.PI * 2, 0)
+      bot.look(
+        Math.random() * Math.PI * 2,
+        (Math.random() - 0.5) * 0.5
+      )
 
       setTimeout(() => {
         bot.setControlState("jump", false)
@@ -39,26 +55,34 @@ function startBot() {
 
   })
 
-  bot.on("end", () => {
-    console.log("Bot mất kết nối, reconnect sau 30s...")
-    setTimeout(startBot, 30000)
+  bot.on("kicked", (reason) => {
+    console.log("Bot bị kick:", reason)
   })
 
   bot.on("error", (err) => {
-    console.log("Lỗi:", err)
+    console.log("Lỗi:", err.message)
   })
 
+  bot.on("end", () => {
+
+    console.log("Bot mất kết nối, reconnect sau 10s...")
+
+    if (afkInterval) clearInterval(afkInterval)
+
+    setTimeout(startBot, 10000)
+
+  })
 }
 
 startBot()
 
-// web server để giữ render online
-const app = express()
+// web server giữ Render online
+const expressApp = express()
 
-app.get("/", (req, res) => {
+expressApp.get("/", (req, res) => {
   res.send("Bot AFK đang chạy")
 })
 
-app.listen(10000, () => {
+expressApp.listen(10000, () => {
   console.log("Web server chạy port 10000")
 })
