@@ -1,6 +1,8 @@
 const mineflayer = require("mineflayer")
 const express = require("express")
 
+const PASSWORD = "123456" // đổi mật khẩu ở đây
+
 let bot
 let afkInterval
 
@@ -23,19 +25,9 @@ function startBot() {
 
     console.log("Bot đã vào world")
 
-    // auto login
-    setTimeout(() => {
-      bot.chat("/login 123456")
-    }, 3000)
-
-    // auto register nếu cần
-    setTimeout(() => {
-      bot.chat("/register 123456 123456")
-    }, 5000)
-
     if (afkInterval) clearInterval(afkInterval)
 
-    // chống AFK
+    // AFK chống kick
     afkInterval = setInterval(() => {
 
       if (!bot.entity) return
@@ -52,6 +44,23 @@ function startBot() {
       }, 200)
 
     }, 1000)
+
+  })
+
+  // detect login / register message
+  bot.on("message", (msg) => {
+
+    const text = msg.toString()
+
+    if (text.includes("/register")) {
+      console.log("Đăng ký tài khoản...")
+      bot.chat(`/register ${PASSWORD} ${PASSWORD}`)
+    }
+
+    if (text.includes("/login")) {
+      console.log("Đăng nhập...")
+      bot.chat(`/login ${PASSWORD}`)
+    }
 
   })
 
@@ -77,12 +86,14 @@ function startBot() {
 startBot()
 
 // web server giữ Render online
-const expressApp = express()
+const app = express()
 
-expressApp.get("/", (req, res) => {
+app.get("/", (req, res) => {
   res.send("Bot AFK đang chạy")
 })
 
-expressApp.listen(10000, () => {
-  console.log("Web server chạy port 10000")
+const PORT = process.env.PORT || 10000
+
+app.listen(PORT, () => {
+  console.log("Web server chạy port", PORT)
 })
