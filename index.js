@@ -1,99 +1,91 @@
-const mineflayer = require("mineflayer")
-const express = require("express")
+const mineflayer = require("mineflayer");
+const express = require("express");
 
-const PASSWORD = "123456" // đổi mật khẩu ở đây
+let bot;
+let afkInterval;
 
-let bot
-let afkInterval
+const config = {
+  host: "darkblademc.joinmc.world",
+  port: 20674,
+  username: "NhatKinhAnhNHi2k9",
+  version: "1.20.1",
+  password: "bot123"
+};
 
 function startBot() {
-
-  console.log("Đang khởi động bot...")
+  console.log("--- Đang kết nối tới Server ---");
 
   bot = mineflayer.createBot({
-    host: "darkblademc.falix.dev",
-    port: 31985,
-    username: "DrDount",
-    version: "1.21.1"
-  })
+    host: config.host,
+    port: config.port,
+    username: config.username,
+    version: config.version,
+    checkTimeoutInterval: 60000 // Tăng thời gian chờ phản hồi từ server
+  });
 
-  bot.on("login", () => {
-    console.log("Bot đã login server")
-  })
+  // Xử lý khi vào server (Login nhanh)
+  bot.once("spawn", () => {
+    console.log("Bot đã vào world. Đang tiến hành đăng nhập...");
 
-  bot.on("spawn", () => {
+    // Giảm thời gian chờ xuống 1s để tránh timeout
+    setTimeout(() => {
+      bot.chat(`/login ${config.password}`);
+      bot.chat(`/register ${config.password} ${config.password}`);
+    }, 1000);
 
-    console.log("Bot đã vào world")
+    startAFK();
+  });
 
-    if (afkInterval) clearInterval(afkInterval)
+  // Đọc tin nhắn server để tự động login nếu server yêu cầu lại
+  bot.on("messagestr", (message) => {
+    if (message.includes("/login")) {
+      bot.chat(`/login ${config.password}`);
+    }
+    if (message.includes("/register")) {
+      bot.chat(`/register ${config.password} ${config.password}`);
+    }
+  });
 
-    // AFK chống kick
+  function startAFK() {
+    if (afkInterval) clearInterval(afkInterval);
+    
     afkInterval = setInterval(() => {
-
-      if (!bot.entity) return
-
-      bot.setControlState("jump", true)
-
-      bot.look(
-        Math.random() * Math.PI * 2,
-        (Math.random() - 0.5) * 0.5
-      )
-
+      if (!bot.entity) return;
+      
+      // Hành động nhảy và xoay người nhẹ
+      bot.setControlState("jump", true);
+      bot.look(bot.entity.yaw + 0.5, 0); 
+      
       setTimeout(() => {
-        bot.setControlState("jump", false)
-      }, 200)
+        bot.setControlState("jump", false);
+      }, 500);
+    }, 20000); // 20 giây thực hiện 1 lần là đủ chống AFK
+  }
 
-    }, 1000)
-
-  })
-
-  // detect login / register message
-  bot.on("message", (msg) => {
-
-    const text = msg.toString()
-
-    if (text.includes("/register")) {
-      console.log("Đăng ký tài khoản...")
-      bot.chat(`/register ${thien24092012} ${thien24092012}`)
-    }
-
-    if (text.includes("/login")) {
-      console.log("Đăng nhập...")
-      bot.chat(`/login ${thien24092012}`)
-    }
-
-  })
-
-  bot.on("kicked", (reason) => {
-    console.log("Bot bị kick:", reason)
-  })
+  // Tự động kết nối lại khi mất kết nối
+  bot.on("end", (reason) => {
+    console.log(`Bot mất kết nối: ${reason}. Thử lại sau 10s...`);
+    if (afkInterval) clearInterval(afkInterval);
+    setTimeout(startBot, 10000);
+  });
 
   bot.on("error", (err) => {
-    console.log("Lỗi:", err.message)
-  })
+    if (err.code === 'ECONNREFUSED') {
+      console.log(`Kết nối thất bại tới ${err.address}`);
+    } else {
+      console.log("Lỗi Bot:", err);
+    }
+  });
 
-  bot.on("end", () => {
-
-    console.log("Bot mất kết nối, reconnect sau 10s...")
-
-    if (afkInterval) clearInterval(afkInterval)
-
-    setTimeout(startBot, 10000)
-
-  })
+  bot.on("kicked", (reason) => {
+    console.log("Bot bị kick với lý do:", reason);
+  });
 }
 
-startBot()
+// Khởi chạy
+startBot();
 
-// web server giữ Render online
-const app = express()
-
-app.get("/", (req, res) => {
-  res.send("Bot AFK đang chạy")
-})
-
-const PORT = process.env.PORT || 10000
-
-app.listen(PORT, () => {
-  console.log("Web server chạy port", PORT)
-})
+// Web Server giữ sống (Dành cho Replit/UptimeRobot)
+const app = express();
+app.get("/", (req, res) => res.send("Bot Minecraft đang chạy!"));
+app.listen(process.env.PORT || 3000, () => console.log("Web server Ready"));
