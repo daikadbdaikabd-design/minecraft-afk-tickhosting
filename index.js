@@ -5,9 +5,9 @@ let bot;
 let afkInterval;
 
 const config = {
-  host: "darkblademc.joinmc.world",
-  port: 20674,
-  username: "NhatKinhAnhNHi2k9",
+  host: "warmhousesmp.nethr.nl",
+  port: 9598,
+  username: "Technoblade",
   version: "1.20.1",
   password: "bot123"
 };
