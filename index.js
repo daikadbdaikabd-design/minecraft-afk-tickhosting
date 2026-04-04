@@ -7,7 +7,7 @@ let afkInterval;
 const config = {
   host: "warmhousesmp.nethr.nl",
   port: 9598,
-  username: "Technoblade",
+  username: "ChanBoMayDe",
   version: "1.20.1",
   password: "bot123"
 };
