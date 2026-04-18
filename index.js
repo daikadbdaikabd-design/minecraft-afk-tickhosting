@@ -5,8 +5,8 @@ let bot;
 let afkInterval;
 
 const config = {
-  host: "darkblademc.falix.dev",
-  port: 31985,
+  host: "191.96.231.22",
+  port: 11187,
   username: "ChanBoMayDe",
   version: "1.20.1",
   password: "bot123"
