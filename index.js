@@ -17,7 +17,7 @@ const config = {
 };
 
 // Tên bot cố định
-const botName = "_tomatoz_";
+const botName = "ThisReal_Boy";
 
 console.log('🚀 Bot đang khởi động...');
 console.log(`📡 Server: ${config.host}:${config.port}`);
