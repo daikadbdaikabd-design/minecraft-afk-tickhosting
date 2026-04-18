@@ -12,12 +12,12 @@ http.createServer((req, res) => {
 const config = {
     host: "191.96.231.27",
     port: 10570,
-    version: "1.21.1",
-    password: "dcmSV1234"  // Thay bằng mật khẩu của bạn
+    version: "1.20.1",
+    password: "matkhaucuabomay"  // Thay bằng mật khẩu của bạn
 };
 
 // Tên bot cố định
-const botName = "ThisReal_Boy";
+const botName = "PauPau_MC";
 
 console.log('🚀 Bot đang khởi động...');
 console.log(`📡 Server: ${config.host}:${config.port}`);
@@ -39,18 +39,18 @@ bot.loadPlugin(pathfinder);
 // ========== KHI BOT VÀO SERVER ==========
 bot.once('spawn', () => {
     console.log('✅ Bot đã vào server thành công!');
-
+    
     // ĐĂNG NHẬP / ĐĂNG KÝ
     setTimeout(() => {
         console.log('🔐 Đang đăng ký / đăng nhập...');
         bot.chat(`/register ${config.password} ${config.password}`);
-
+        
         setTimeout(() => {
             bot.chat(`/login ${config.password}`);
             console.log('✅ Đã đăng nhập thành công!');
         }, 1000);
     }, 2000);
-
+    
     // KÍCH HOẠT CÁC HÀNH VI SAU KHI ĐĂNG NHẬP XONG
     setTimeout(() => {
         startBehaviors();
@@ -60,7 +60,7 @@ bot.once('spawn', () => {
 // ========== CÁC HÀNH VI CỦA BOT ==========
 function startBehaviors() {
     console.log('🎮 Bot bắt đầu hoạt động...');
-
+    
     // 1. NHẢY NGẪU NHIÊN (mỗi 2-5 giây)
     setInterval(() => {
         if (!bot.entity) return;
@@ -70,7 +70,7 @@ function startBehaviors() {
             console.log('🦘 Bot nhảy');
         }
     }, 3000);
-
+    
     // 2. XOAY ĐẦU QUAN SÁT (mỗi 3-8 giây)
     setInterval(() => {
         if (!bot.entity) return;
@@ -79,23 +79,23 @@ function startBehaviors() {
         bot.look(yaw, pitch);
         console.log('👀 Bot xoay đầu quan sát');
     }, 5000);
-
+    
     // 3. DI CHUYỂN NGẪU NHIÊN (mỗi 10-20 giây)
     setInterval(async () => {
         if (!bot.entity) return;
-
+        
         // Di chuyển đến vị trí ngẫu nhiên cách vị trí hiện tại 5-15 block
         const range = Math.random() * 10 + 5;
         const x = bot.entity.position.x + (Math.random() - 0.5) * range;
         const z = bot.entity.position.z + (Math.random() - 0.5) * range;
-
+        
         const movements = new Movements(bot);
         movements.allowParkour = true;
         bot.pathfinder.setMovements(movements);
         bot.pathfinder.setGoal(new goals.GoalNear(x, bot.entity.position.y, z, 1));
-
+        
         console.log(`🚶 Bot đang di chuyển đến (${Math.round(x)}, ${Math.round(z)})`);
-
+        
         // Dừng lại sau 5-10 giây
         setTimeout(() => {
             if (bot.pathfinder) {
@@ -103,9 +103,9 @@ function startBehaviors() {
                 console.log('🚶 Bot dừng lại');
             }
         }, 8000);
-
+        
     }, 15000);
-
+    
     // 4. THỈNH THOẢNG CHAT (mỗi 1-3 phút)
     setInterval(() => {
         if (!bot.entity) return;
@@ -127,7 +127,7 @@ function startBehaviors() {
 bot.on('end', (reason) => {
     console.log(`❌ Bot thoát: ${reason}`);
     console.log('🔄 Thử kết nối lại sau 30 giây...');
-
+    
     setTimeout(() => {
         console.log('🚀 Khởi động lại bot...');
         process.exit(1); // Render sẽ tự động restart
