@@ -1,91 +1,147 @@
-const mineflayer = require("mineflayer");
-const express = require("express");
+const mineflayer = require('mineflayer');
+const { pathfinder, Movements, goals } = require('mineflayer-pathfinder');
+const http = require('http');
 
-let bot;
-let afkInterval;
+// Web server giữ bot chạy 24/7 trên Render
+http.createServer((req, res) => {
+    res.write('Bot is running!');
+    res.end();
+}).listen(10000);
 
+// CẤU HÌNH
 const config = {
-  host: "191.96.231.27",
-  port: 10570,
-  username: "ChanBoMayDe",
-  version: "1.20.1",
-  password: "bot123"
+    host: "191.96.231.27",
+    port: 10570,
+    version: "1.21.1",
+    password: "matkhaucuaban"  // Thay bằng mật khẩu của bạn
 };
 
-function startBot() {
-  console.log("--- Đang kết nối tới Server ---");
+// Tên bot cố định
+const botName = "_tomatoz_";
 
-  bot = mineflayer.createBot({
+console.log('🚀 Bot đang khởi động...');
+console.log(`📡 Server: ${config.host}:${config.port}`);
+console.log(`🤖 Tên bot: ${botName}`);
+
+// TẠO BOT
+const bot = mineflayer.createBot({
     host: config.host,
     port: config.port,
-    username: config.username,
+    username: botName,
     version: config.version,
-    checkTimeoutInterval: 60000 // Tăng thời gian chờ phản hồi từ server
-  });
+    auth: 'offline',
+    hideErrors: true
+});
 
-  // Xử lý khi vào server (Login nhanh)
-  bot.once("spawn", () => {
-    console.log("Bot đã vào world. Đang tiến hành đăng nhập...");
+// Load pathfinder để di chuyển
+bot.loadPlugin(pathfinder);
 
-    // Giảm thời gian chờ xuống 1s để tránh timeout
+// ========== KHI BOT VÀO SERVER ==========
+bot.once('spawn', () => {
+    console.log('✅ Bot đã vào server thành công!');
+
+    // ĐĂNG NHẬP / ĐĂNG KÝ
     setTimeout(() => {
-      bot.chat(`/login ${config.password}`);
-      bot.chat(`/register ${config.password} ${config.password}`);
-    }, 1000);
+        console.log('🔐 Đang đăng ký / đăng nhập...');
+        bot.chat(`/register ${config.password} ${config.password}`);
 
-    startAFK();
-  });
+        setTimeout(() => {
+            bot.chat(`/login ${config.password}`);
+            console.log('✅ Đã đăng nhập thành công!');
+        }, 1000);
+    }, 2000);
 
-  // Đọc tin nhắn server để tự động login nếu server yêu cầu lại
-  bot.on("messagestr", (message) => {
-    if (message.includes("/login")) {
-      bot.chat(`/login ${config.password}`);
-    }
-    if (message.includes("/register")) {
-      bot.chat(`/register ${config.password} ${config.password}`);
-    }
-  });
+    // KÍCH HOẠT CÁC HÀNH VI SAU KHI ĐĂNG NHẬP XONG
+    setTimeout(() => {
+        startBehaviors();
+    }, 5000);
+});
 
-  function startAFK() {
-    if (afkInterval) clearInterval(afkInterval);
-    
-    afkInterval = setInterval(() => {
-      if (!bot.entity) return;
-      
-      // Hành động nhảy và xoay người nhẹ
-      bot.setControlState("jump", true);
-      bot.look(bot.entity.yaw + 0.5, 0); 
-      
-      setTimeout(() => {
-        bot.setControlState("jump", false);
-      }, 500);
-    }, 20000); // 20 giây thực hiện 1 lần là đủ chống AFK
-  }
+// ========== CÁC HÀNH VI CỦA BOT ==========
+function startBehaviors() {
+    console.log('🎮 Bot bắt đầu hoạt động...');
 
-  // Tự động kết nối lại khi mất kết nối
-  bot.on("end", (reason) => {
-    console.log(`Bot mất kết nối: ${reason}. Thử lại sau 10s...`);
-    if (afkInterval) clearInterval(afkInterval);
-    setTimeout(startBot, 10000);
-  });
+    // 1. NHẢY NGẪU NHIÊN (mỗi 2-5 giây)
+    setInterval(() => {
+        if (!bot.entity) return;
+        if (Math.random() > 0.6) {
+            bot.setControlState('jump', true);
+            setTimeout(() => bot.setControlState('jump', false), 100);
+            console.log('🦘 Bot nhảy');
+        }
+    }, 3000);
 
-  bot.on("error", (err) => {
-    if (err.code === 'ECONNREFUSED') {
-      console.log(`Kết nối thất bại tới ${err.address}`);
-    } else {
-      console.log("Lỗi Bot:", err);
-    }
-  });
+    // 2. XOAY ĐẦU QUAN SÁT (mỗi 3-8 giây)
+    setInterval(() => {
+        if (!bot.entity) return;
+        const yaw = Math.random() * Math.PI * 2;           // Xoay ngang 360 độ
+        const pitch = (Math.random() - 0.5) * Math.PI / 3; // Xoay lên xuống
+        bot.look(yaw, pitch);
+        console.log('👀 Bot xoay đầu quan sát');
+    }, 5000);
 
-  bot.on("kicked", (reason) => {
-    console.log("Bot bị kick với lý do:", reason);
-  });
+    // 3. DI CHUYỂN NGẪU NHIÊN (mỗi 10-20 giây)
+    setInterval(async () => {
+        if (!bot.entity) return;
+
+        // Di chuyển đến vị trí ngẫu nhiên cách vị trí hiện tại 5-15 block
+        const range = Math.random() * 10 + 5;
+        const x = bot.entity.position.x + (Math.random() - 0.5) * range;
+        const z = bot.entity.position.z + (Math.random() - 0.5) * range;
+
+        const movements = new Movements(bot);
+        movements.allowParkour = true;
+        bot.pathfinder.setMovements(movements);
+        bot.pathfinder.setGoal(new goals.GoalNear(x, bot.entity.position.y, z, 1));
+
+        console.log(`🚶 Bot đang di chuyển đến (${Math.round(x)}, ${Math.round(z)})`);
+
+        // Dừng lại sau 5-10 giây
+        setTimeout(() => {
+            if (bot.pathfinder) {
+                bot.pathfinder.setGoal(null);
+                console.log('🚶 Bot dừng lại');
+            }
+        }, 8000);
+
+    }, 15000);
+
+    // 4. THỈNH THOẢNG CHAT (mỗi 1-3 phút)
+    setInterval(() => {
+        if (!bot.entity) return;
+        const messages = [
+            "Hello everyone!",
+            "Hi guys!",
+            "Anyone online?",
+            "Good game!",
+            "I'm exploring!",
+            "Nice server!"
+        ];
+        const msg = messages[Math.floor(Math.random() * messages.length)];
+        bot.chat(msg);
+        console.log(`💬 Bot chat: "${msg}"`);
+    }, 120000);
 }
 
-// Khởi chạy
-startBot();
+// ========== XỬ LÝ KHI BỊ DISCONNECT ==========
+bot.on('end', (reason) => {
+    console.log(`❌ Bot thoát: ${reason}`);
+    console.log('🔄 Thử kết nối lại sau 30 giây...');
 
-// Web Server giữ sống (Dành cho Replit/UptimeRobot)
-const app = express();
-app.get("/", (req, res) => res.send("Bot Minecraft đang chạy!"));
-app.listen(process.env.PORT || 3000, () => console.log("Web server Ready"));
+    setTimeout(() => {
+        console.log('🚀 Khởi động lại bot...');
+        process.exit(1); // Render sẽ tự động restart
+    }, 30000);
+});
+
+// ========== XỬ LÝ LỖI ==========
+bot.on('error', (err) => {
+    console.log(`⚠️ Lỗi: ${err.code || err.message}`);
+});
+
+bot.on('kicked', (reason) => {
+    console.log(`👢 Bot bị kick: ${reason}`);
+    setTimeout(() => process.exit(1), 30000);
+});
+
+console.log('✅ Bot đã sẵn sàng!');
