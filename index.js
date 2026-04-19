@@ -3,16 +3,15 @@ const express = require("express")
 
 let bot = null
 
-// ================== CONFIG ==================
 const CONFIG = {
   host: "191.96.231.27",
   port: 10570,
-  username: "Samurai_alien"
+  username: "Samurai_alien",
+  password: "thien24092012"
 }
 
-// ================== AUTH STATE ==================
-let isAuthDone = false
-let authTries = 0
+let isLoggedIn = false
+let loginStep = 0
 
 // ================== START BOT ==================
 function startBot() {
@@ -27,195 +26,172 @@ function startBot() {
     auth: "offline"
   })
 
-  // ================== LOGIN ==================
+  // ================== LOGIN EVENT ==================
   bot.once("login", () => {
-    console.log("✔ Login thành công (packet)")
+    console.log("✔ Connected to server")
   })
 
   // ================== SPAWN ==================
   bot.once("spawn", () => {
+
     console.log("✔ Bot vào world")
 
     setTimeout(() => {
-      tryLogin()
-    }, 3000)
+      autoAuth()
+    }, 5000) // delay chống timeout
 
     startBrain()
   })
 
-  // ================== AUTO LOGIN FIX ==================
-  function tryLogin() {
+  // ================== AUTO AUTH ==================
+  function autoAuth() {
 
-    if (isAuthDone) return
-    if (authTries > 3) return
+    if (isLoggedIn) return
+    if (loginStep > 3) return
 
-    authTries++
+    loginStep++
 
-    console.log("🔐 Đang thử login... lần", authTries)
+    console.log("🔐 Auth attempt:", loginStep)
 
-    bot.chat("/login thien24092012")
+    bot.chat("/login " + CONFIG.password)
 
     setTimeout(() => {
-      if (!isAuthDone) {
-        bot.chat("/register thien24092012 thien24092012")
+
+      if (!isLoggedIn) {
+        bot.chat("/register " + CONFIG.password + " " + CONFIG.password)
       }
-    }, 2000)
+
+    }, 3000)
   }
 
-  // ================== DETECT LOGIN SUCCESS ==================
+  // ================== DETECT LOGIN ==================
   bot.on("messagestr", (msg) => {
 
     if (!msg) return
-    const text = msg.toLowerCase()
+    const t = msg.toLowerCase()
 
     if (
-      text.includes("logged in") ||
-      text.includes("login successful") ||
-      text.includes("successfully") ||
-      text.includes("đăng nhập thành công")
+      t.includes("successful") ||
+      t.includes("logged in") ||
+      t.includes("success")
     ) {
-      isAuthDone = true
+      isLoggedIn = true
       console.log("✔ LOGIN OK")
+    }
+
+    if (t.includes("login") && t.includes("timeout")) {
+      console.log("❌ Login timeout detected")
     }
 
   })
 
-  // ================== ERROR HANDLING ==================
+  // ================== ERROR ==================
   bot.on("kicked", (r) => {
     console.log("❌ Kick:", r)
   })
 
-  bot.on("error", (err) => {
-    console.log("❌ Error:", err.message)
+  bot.on("error", (e) => {
+    console.log("❌ Error:", e.message)
   })
 
   bot.on("end", () => {
+
     console.log("🔄 Reconnect sau 15s...")
 
-    isAuthDone = false
-    authTries = 0
+    isLoggedIn = false
+    loginStep = 0
 
     setTimeout(startBot, 15000)
   })
 }
 
-// ================== SAFE CHECK ==================
+// ================== SAFE ==================
 function safe(fn) {
   if (!bot || !bot.entity) return
   fn()
 }
 
-// ================== AI BRAIN ==================
+// ================== BRAIN ==================
 function startBrain() {
 
+  // MOVEMENT LOOP
   setInterval(() => {
-    safe(() => {
-      move()
-      look()
-      attack()
-      breakBlock()
-      randomChat()
-    })
-  }, 700)
 
-  setInterval(() => {
     safe(() => {
 
       bot.setControlState("forward", true)
 
-      if (Math.random() < 0.4) {
-        bot.setControlState("sprint", true)
-      } else {
-        bot.setControlState("sprint", false)
+      if (Math.random() < 0.3) {
+        bot.setControlState("left", true)
+        setTimeout(() => bot.setControlState("left", false), 300)
       }
 
-      bot.setControlState("jump", true)
-      setTimeout(() => bot.setControlState("jump", false), 150)
+      if (Math.random() < 0.3) {
+        bot.setControlState("right", true)
+        setTimeout(() => bot.setControlState("right", false), 300)
+      }
 
     })
-  }, 2000)
-}
 
-// ================== MOVE ==================
-function move() {
-  safe(() => {
+  }, 1000)
 
-    bot.setControlState("forward", true)
+  // LOOK + JUMP
+  setInterval(() => {
 
-    if (Math.random() < 0.3) {
-      bot.setControlState("left", true)
-      setTimeout(() => bot.setControlState("left", false), 300)
-    }
+    safe(() => {
 
-    if (Math.random() < 0.3) {
-      bot.setControlState("right", true)
-      setTimeout(() => bot.setControlState("right", false), 300)
-    }
+      bot.look(
+        Math.random() * Math.PI * 2,
+        (Math.random() - 0.5),
+        true
+      )
 
-  })
-}
-
-// ================== LOOK ==================
-function look() {
-  safe(() => {
-    bot.look(
-      Math.random() * Math.PI * 2,
-      (Math.random() - 0.5),
-      true
-    )
-  })
-}
-
-// ================== BREAK BLOCK ==================
-function breakBlock() {
-  safe(() => {
-    const block = bot.blockAt(bot.entity.position.offset(1, 0, 0))
-    if (block && bot.canDigBlock(block)) {
-      bot.dig(block).catch(() => {})
-    }
-  })
-}
-
-// ================== ATTACK ==================
-function attack() {
-  safe(() => {
-
-    const target = bot.nearestEntity(e =>
-      e.type === "mob" || e.type === "player"
-    )
-
-    if (!target) return
-
-    const dist = bot.entity.position.distanceTo(target.position)
-
-    if (dist < 4) {
       bot.setControlState("jump", true)
-      bot.attack(target)
       setTimeout(() => bot.setControlState("jump", false), 200)
+
+    })
+
+  }, 2000)
+
+  // ATTACK
+  setInterval(() => {
+
+    safe(() => {
+
+      const target = bot.nearestEntity(e =>
+        e.type === "player" || e.type === "mob"
+      )
+
+      if (!target) return
+
+      const dist = bot.entity.position.distanceTo(target.position)
+
+      if (dist < 4) {
+        bot.attack(target)
+      }
+
+    })
+
+  }, 800)
+
+  // RANDOM CHAT
+  setInterval(() => {
+
+    if (!bot || !isLoggedIn) return
+
+    const msgs = ["gg", "ez", "hi", "bot online", "combat"]
+
+    if (Math.random() < 0.1) {
+      bot.chat(msgs[Math.floor(Math.random() * msgs.length)])
     }
 
-  })
-}
-
-// ================== CHAT ==================
-const chats = [
-  "ez 😎",
-  "bot here 🤖",
-  "gg",
-  "combat mode",
-  "hi server"
-]
-
-function randomChat() {
-  if (Math.random() < 0.1) {
-    bot.chat(chats[Math.floor(Math.random() * chats.length)])
-  }
+  }, 7000)
 }
 
 // ================== START ==================
 startBot()
 
-// ================== EXPRESS KEEP ALIVE ==================
+// ================== WEB KEEP ALIVE ==================
 const app = express()
 
 app.get("/", (req, res) => {
