@@ -3,16 +3,20 @@ const express = require("express")
 
 let bot = null
 
+// ================== CONFIG ==================
 const CONFIG = {
   host: "191.96.231.27",
   port: 10570,
   username: "Samurai_alien",
+  password: "thien24092012"  // Thêm password vào config
 }
 
-let isLoggedIn = false
-let loginStep = 0
-let brainStarted = false
+// ================== AUTH STATE ==================
+let isAuthDone = false
+let authTries = 0
+let currentAttempt = "login" // "login" hoặc "register"
 
+// ================== START BOT ==================
 function startBot() {
 
   console.log("Đang khởi động bot...")
@@ -25,38 +29,168 @@ function startBot() {
     auth: "offline"
   })
 
+  // ================== LOGIN ==================
+  bot.once("login", () => {
+    console.log("✔ Login thành công (packet)")
+  })
+
+  // ================== SPAWN ==================
   bot.once("spawn", () => {
+    console.log("✔ Bot vào world")
 
-    console.log("✔ Spawned")
+    setTimeout(() => {
+      tryLogin()
+    }, 3000)
 
-    // CHỈ LOGIN, KHÔNG CHẠY BRAIN
- bot.on("messagestr", (msg) => {
+    startBrain()
+  })
 
-    if (msg.includes("/register")) {
-      bot.chat("/register thien24092012 thien24092012")
+  // ================== AUTO LOGIN FIX ==================
+  function tryLogin() {
+
+    if (isAuthDone) return
+    if (authTries > 5) {
+      console.log("❌ Quá số lần thử, chờ reconnect...")
+      return
     }
 
-    if (msg.includes("/login")) {
-      bot.chat("/login thien24092012")
+    authTries++
+    console.log(`🔐 Đang thử ${currentAttempt}... lần ${authTries}`)
+
+    if (currentAttempt === "login") {
+      bot.chat(`/login ${CONFIG.password}`)
+    } else {
+      bot.chat(`/register ${CONFIG.password} ${CONFIG.password}`)
     }
 
+    // Sau 3 giây nếu chưa thành công thì chuyển sang cách khác
+    setTimeout(() => {
+      if (!isAuthDone) {
+        if (currentAttempt === "login") {
+          console.log("⚠️ Login chưa thành công, thử register...")
+          currentAttempt = "register"
+          authTries = 0 // Reset số lần thử cho register
+          tryLogin()
+        } else if (currentAttempt === "register") {
+          console.log("⚠️ Register chưa thành công, thử lại login...")
+          currentAttempt = "login"
+          authTries = 0 // Reset số lần thử cho login
+          tryLogin()
+        }
+      }
+    }, 3000)
+  }
+
+  // ================== DETECT LOGIN SUCCESS ==================
+  bot.on("messagestr", (msg) => {
+
+    if (!msg) return
+    const text = msg.toLowerCase()
+
+    // Các dấu hiệu thành công
+    if (
+      text.includes("logged in") ||
+      text.includes("login successful") ||
+      text.includes("successfully") ||
+      text.includes("đăng nhập thành công") ||
+      text.includes("registered") ||
+      text.includes("đã đăng ký")
+    ) {
+      isAuthDone = true
+      currentAttempt = "login"
+      authTries = 0
+      console.log("✔ AUTH THÀNH CÔNG!")
+    }
+
+    // Các dấu hiệu đã đăng ký rồi
+    if (
+      text.includes("already registered") ||
+      text.includes("đã đăng ký") ||
+      text.includes("already logged in")
+    ) {
+      console.log("⚠️ Đã đăng ký trước đó, chuyển sang login...")
+      currentAttempt = "login"
+      authTries = 0
+      tryLogin()
+    }
+
+    // Sai mật khẩu
+    if (
+      text.includes("wrong password") ||
+      text.includes("sai mật khẩu") ||
+      text.includes("incorrect password")
+    ) {
+      console.log("❌ Sai mật khẩu, thử lại...")
+      if (currentAttempt === "login") {
+        authTries = 0
+        tryLogin()
+      }
+    }
+  })
+
+  // ================== ERROR HANDLING ==================
+  bot.on("kicked", (reason) => {
+    console.log("❌ Bot bị kick:", reason)
+    isAuthDone = false
+    authTries = 0
+    currentAttempt = "login"
+  })
+
+  bot.on("error", (err) => {
+    console.log("❌ Lỗi:", err.message)
+  })
 
   bot.on("end", () => {
+    console.log("🔄 Mất kết nối, reconnect sau 15s...")
 
-    isLoggedIn = false
-    loginStep = 0
-    brainStarted = false
+    isAuthDone = false
+    authTries = 0
+    currentAttempt = "login"
 
     setTimeout(startBot, 15000)
   })
 }
 
-// ================== BRAIN (CHỈ CHẠY SAU LOGIN) ==================
+// ================== SAFE CHECK ==================
+function safe(fn) {
+  if (!bot || !bot.entity) return
+  fn()
+}
+
+// ================== AI BRAIN ==================
 function startBrain() {
 
   setInterval(() => {
+    safe(() => {
+      move()
+      look()
+      attack()
+      breakBlock()
+      randomChat()
+    })
+  }, 700)
 
-    if (!bot || !isLoggedIn) return
+  setInterval(() => {
+    safe(() => {
+
+      bot.setControlState("forward", true)
+
+      if (Math.random() < 0.4) {
+        bot.setControlState("sprint", true)
+      } else {
+        bot.setControlState("sprint", false)
+      }
+
+      bot.setControlState("jump", true)
+      setTimeout(() => bot.setControlState("jump", false), 150)
+
+    })
+  }, 2000)
+}
+
+// ================== MOVE ==================
+function move() {
+  safe(() => {
 
     bot.setControlState("forward", true)
 
@@ -70,39 +204,70 @@ function startBrain() {
       setTimeout(() => bot.setControlState("right", false), 300)
     }
 
-  }, 1000)
+  })
+}
 
-  setInterval(() => {
-
-    if (!bot || !isLoggedIn) return
-
+// ================== LOOK ==================
+function look() {
+  safe(() => {
     bot.look(
       Math.random() * Math.PI * 2,
       (Math.random() - 0.5),
       true
     )
-
-    bot.setControlState("jump", true)
-    setTimeout(() => bot.setControlState("jump", false), 200)
-
-  }, 2000)
-
-  setInterval(() => {
-
-    if (!bot || !isLoggedIn) return
-
-    const target = bot.nearestEntity(e =>
-      e.type === "player" || e.type === "mob"
-    )
-
-    if (target && bot.entity.position.distanceTo(target.position) < 4) {
-      bot.attack(target)
-    }
-
-  }, 800)
+  })
 }
 
-// web server cho UptimeRobot
+// ================== BREAK BLOCK ==================
+function breakBlock() {
+  safe(() => {
+    const block = bot.blockAt(bot.entity.position.offset(1, 0, 0))
+    if (block && bot.canDigBlock(block)) {
+      bot.dig(block).catch(() => {})
+    }
+  })
+}
+
+// ================== ATTACK ==================
+function attack() {
+  safe(() => {
+
+    const target = bot.nearestEntity(e =>
+      e.type === "mob" || e.type === "player"
+    )
+
+    if (!target) return
+
+    const dist = bot.entity.position.distanceTo(target.position)
+
+    if (dist < 4) {
+      bot.setControlState("jump", true)
+      bot.attack(target)
+      setTimeout(() => bot.setControlState("jump", false), 200)
+    }
+
+  })
+}
+
+// ================== CHAT ==================
+const chats = [
+  "ez 😎",
+  "bot here 🤖",
+  "gg",
+  "combat mode",
+  "hi server"
+]
+
+function randomChat() {
+  if (Math.random() < 0.1) {
+    bot.chat(chats[Math.floor(Math.random() * chats.length)])
+  }
+}
+
+// ================== START ==================
+startBot()
+
+// ================== EXPRESS KEEP ALIVE ==================
 const app = express()
 
 app.get("/", (req, res) => {
@@ -112,5 +277,5 @@ app.get("/", (req, res) => {
 const PORT = process.env.PORT || 3000
 
 app.listen(PORT, () => {
-  console.log("Web server chạy port", PORT)
+  console.log("Web server running:", PORT)
 })
