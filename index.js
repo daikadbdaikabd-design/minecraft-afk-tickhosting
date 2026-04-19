@@ -7,7 +7,6 @@ const CONFIG = {
   host: "191.96.231.27",
   port: 10570,
   username: "Samurai_alien",
-  password: "thien24092012"
 }
 
 let isLoggedIn = false
@@ -31,44 +30,16 @@ function startBot() {
     console.log("✔ Spawned")
 
     // CHỈ LOGIN, KHÔNG CHẠY BRAIN
-    setTimeout(autoAuth, 5000)
-  })
+ bot.on("messagestr", (msg) => {
 
-  function autoAuth() {
-
-    if (isLoggedIn) return
-    if (loginStep > 3) return
-
-    loginStep++
-
-    bot.chat("/login " + CONFIG.password)
-
-    setTimeout(() => {
-      if (!isLoggedIn) {
-        bot.chat("/register " + CONFIG.password + " " + CONFIG.password)
-      }
-    }, 2500)
-  }
-
-  bot.on("messagestr", (msg) => {
-
-    if (!msg) return
-    const t = msg.toLowerCase()
-
-    if (
-      t.includes("successful") ||
-      t.includes("logged in") ||
-      t.includes("success")
-    ) {
-      isLoggedIn = true
-      console.log("✔ LOGIN DONE")
-
-      if (!brainStarted) {
-        brainStarted = true
-        startBrain()
-      }
+    if (msg.includes("/register")) {
+      bot.chat("/register thien24092012 thien24092012")
     }
-  })
+
+    if (msg.includes("/login")) {
+      bot.chat("/login thien24092012")
+    }
+
 
   bot.on("end", () => {
 
@@ -131,15 +102,15 @@ function startBrain() {
   }, 800)
 }
 
-// ================== WEB ==================
+// web server cho UptimeRobot
 const app = express()
 
 app.get("/", (req, res) => {
   res.send("bot online")
 })
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Web running")
-})
+const PORT = process.env.PORT || 3000
 
-startBot()
+app.listen(PORT, () => {
+  console.log("Web server chạy port", PORT)
+})
