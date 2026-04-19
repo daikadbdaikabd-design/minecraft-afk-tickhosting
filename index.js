@@ -10,6 +10,10 @@ const CONFIG = {
   username: "Samurai_alien"
 }
 
+// ================== AUTH STATE ==================
+let isAuthDone = false
+let authTries = 0
+
 // ================== START BOT ==================
 function startBot() {
 
@@ -19,33 +23,59 @@ function startBot() {
     host: CONFIG.host,
     port: CONFIG.port,
     username: CONFIG.username,
-
-    // 🔥 FIX QUAN TRỌNG NHẤT CHO RENDER / PROXY SERVER
     version: false,
     auth: "offline"
   })
 
   // ================== LOGIN ==================
   bot.once("login", () => {
-    console.log("✔ Login thành công")
+    console.log("✔ Login thành công (packet)")
   })
 
   // ================== SPAWN ==================
   bot.once("spawn", () => {
     console.log("✔ Bot vào world")
 
+    setTimeout(() => {
+      tryLogin()
+    }, 3000)
+
     startBrain()
   })
 
-  // ================== AUTO LOGIN SYSTEM ==================
+  // ================== AUTO LOGIN FIX ==================
+  function tryLogin() {
+
+    if (isAuthDone) return
+    if (authTries > 3) return
+
+    authTries++
+
+    console.log("🔐 Đang thử login... lần", authTries)
+
+    bot.chat("/login thien24092012")
+
+    setTimeout(() => {
+      if (!isAuthDone) {
+        bot.chat("/register thien24092012 thien24092012")
+      }
+    }, 2000)
+  }
+
+  // ================== DETECT LOGIN SUCCESS ==================
   bot.on("messagestr", (msg) => {
 
-    if (msg.includes("/register")) {
-      bot.chat("/register thien24092012 thien24092012")
-    }
+    if (!msg) return
+    const text = msg.toLowerCase()
 
-    if (msg.includes("/login")) {
-      bot.chat("/login thien24092012")
+    if (
+      text.includes("logged in") ||
+      text.includes("login successful") ||
+      text.includes("successfully") ||
+      text.includes("đăng nhập thành công")
+    ) {
+      isAuthDone = true
+      console.log("✔ LOGIN OK")
     }
 
   })
@@ -61,6 +91,10 @@ function startBot() {
 
   bot.on("end", () => {
     console.log("🔄 Reconnect sau 15s...")
+
+    isAuthDone = false
+    authTries = 0
+
     setTimeout(startBot, 15000)
   })
 }
@@ -74,7 +108,6 @@ function safe(fn) {
 // ================== AI BRAIN ==================
 function startBrain() {
 
-  // 🔁 MAIN LOOP (KHÔNG ĐỨNG IM)
   setInterval(() => {
     safe(() => {
       move()
@@ -85,7 +118,6 @@ function startBrain() {
     })
   }, 700)
 
-  // 🧠 FORCE MOVEMENT (QUAN TRỌNG CHO RENDER)
   setInterval(() => {
     safe(() => {
 
