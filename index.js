@@ -43,10 +43,10 @@ bot.once('spawn', () => {
     // ĐĂNG NHẬP / ĐĂNG KÝ
     setTimeout(() => {
         console.log('🔐 Đang đăng ký / đăng nhập...');
-        bot.chat(`/register ${config.password} ${config.password}`);
+        bot.chat(`/register ThienDepZai2409 ThienDepZai2409}`);
         
         setTimeout(() => {
-            bot.chat(`/login ${config.password}`);
+            bot.chat(`/login ThienDepZai2409 `);
             console.log('✅ Đã đăng nhập thành công!');
         }, 1000);
     }, 2000);
