@@ -9,7 +9,7 @@ let isReconnecting = false
 const CONFIG = {
   host: "191.96.231.27",
   port: 10570,
-  username: "BetterSurvivall_",
+  username: "gerq",
   password: "thien100200300emyeu"
 }
 
@@ -281,7 +281,7 @@ function startBrain() {
       look()
       attack()
       breakBlock()
-      randomChat()
+      // Đã xóa randomChat()
     })
   }, 700)
 
@@ -356,23 +356,6 @@ function attack() {
       setTimeout(() => bot.setControlState("jump", false), 200)
     }
   })
-}
-
-// ================== CHAT ==================
-const chats = [
-  "ez 😎",
-  "bot here 🤖",
-  "gg",
-  "combat mode",
-  "hi server"
-]
-
-function randomChat() {
-  if (Math.random() < 0.1) {
-    safe(() => {
-      bot.chat(chats[Math.floor(Math.random() * chats.length)])
-    })
-  }
 }
 
 // ================== START ==================
