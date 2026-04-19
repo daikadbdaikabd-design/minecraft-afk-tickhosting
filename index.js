@@ -3,34 +3,41 @@ const express = require("express")
 
 let bot = null
 
-const chats = [
-  "ez ",
-  "@4/7 bên em!",
-  "gg",
-  "Anh Thiện HT1",
-  "hello server",
-  "auto mode on",
-]
+// ================== CONFIG ==================
+const CONFIG = {
+  host: "191.96.231.27",
+  port: 10570,
+  username: "Samurai_alien"
+}
 
-// ================= START BOT =================
+// ================== START BOT ==================
 function startBot() {
 
   console.log("Đang khởi động bot...")
 
   bot = mineflayer.createBot({
-    host: "191.96.231.27",
-    port: 10570,
-    username: "Samurai_AlienEmero",
-    version: "1.20.1"
+    host: CONFIG.host,
+    port: CONFIG.port,
+    username: CONFIG.username,
+
+    // 🔥 FIX QUAN TRỌNG NHẤT CHO RENDER / PROXY SERVER
+    version: false,
+    auth: "offline"
   })
 
+  // ================== LOGIN ==================
+  bot.once("login", () => {
+    console.log("✔ Login thành công")
+  })
+
+  // ================== SPAWN ==================
   bot.once("spawn", () => {
-    console.log("Bot đã vào world")
+    console.log("✔ Bot vào world")
 
     startBrain()
   })
 
-  // AUTO LOGIN / REGISTER
+  // ================== AUTO LOGIN SYSTEM ==================
   bot.on("messagestr", (msg) => {
 
     if (msg.includes("/register")) {
@@ -43,78 +50,80 @@ function startBot() {
 
   })
 
-  bot.on("kicked", (r) => console.log("Kick:", r))
-  bot.on("error", (e) => console.log("Error:", e.message))
+  // ================== ERROR HANDLING ==================
+  bot.on("kicked", (r) => {
+    console.log("❌ Kick:", r)
+  })
+
+  bot.on("error", (err) => {
+    console.log("❌ Error:", err.message)
+  })
 
   bot.on("end", () => {
-    console.log("Reconnecting 30s...")
-    setTimeout(startBot, 30000)
+    console.log("🔄 Reconnect sau 15s...")
+    setTimeout(startBot, 15000)
   })
 }
 
-// ================= SAFE RUN =================
+// ================== SAFE CHECK ==================
 function safe(fn) {
   if (!bot || !bot.entity) return
   fn()
 }
 
-// ================= BRAIN =================
+// ================== AI BRAIN ==================
 function startBrain() {
 
-  // 🔥 LOOP MAIN (KHÔNG ĐỨNG IM)
+  // 🔁 MAIN LOOP (KHÔNG ĐỨNG IM)
   setInterval(() => {
     safe(() => {
       move()
       look()
-      breakBlock()
       attack()
-      chatRandom()
+      breakBlock()
+      randomChat()
     })
-  }, 800)
+  }, 700)
 
-  // 🦘 ANTI AFK + FORCE MOVE
+  // 🧠 FORCE MOVEMENT (QUAN TRỌNG CHO RENDER)
   setInterval(() => {
     safe(() => {
 
       bot.setControlState("forward", true)
 
-      if (Math.random() < 0.3) {
+      if (Math.random() < 0.4) {
         bot.setControlState("sprint", true)
       } else {
         bot.setControlState("sprint", false)
       }
 
       bot.setControlState("jump", true)
-
-      setTimeout(() => {
-        bot.setControlState("jump", false)
-      }, 200)
+      setTimeout(() => bot.setControlState("jump", false), 150)
 
     })
   }, 2000)
 }
 
-// ================= MOVE =================
+// ================== MOVE ==================
 function move() {
   safe(() => {
 
     bot.setControlState("forward", true)
 
-    // random đổi hướng
-    if (Math.random() < 0.25) {
+    if (Math.random() < 0.3) {
       bot.setControlState("left", true)
-      setTimeout(() => bot.setControlState("left", false), 400)
+      setTimeout(() => bot.setControlState("left", false), 300)
     }
 
-    if (Math.random() < 0.25) {
+    if (Math.random() < 0.3) {
       bot.setControlState("right", true)
-      setTimeout(() => bot.setControlState("right", false), 400)
+      setTimeout(() => bot.setControlState("right", false), 300)
     }
 
   })
 }
 
-// ================= LOOK =================
+// ================== LOOK ==================
 function look() {
   safe(() => {
     bot.look(
@@ -125,17 +134,17 @@ function look() {
   })
 }
 
-// ================= BREAK BLOCK =================
+// ================== BREAK BLOCK ==================
 function breakBlock() {
   safe(() => {
-    const b = bot.blockAt(bot.entity.position.offset(1, 0, 0))
-    if (b && bot.canDigBlock(b)) {
-      bot.dig(b).catch(() => {})
+    const block = bot.blockAt(bot.entity.position.offset(1, 0, 0))
+    if (block && bot.canDigBlock(block)) {
+      bot.dig(block).catch(() => {})
     }
   })
 }
 
-// ================= ATTACK =================
+// ================== ATTACK ==================
 function attack() {
   safe(() => {
 
@@ -149,35 +158,40 @@ function attack() {
 
     if (dist < 4) {
       bot.setControlState("jump", true)
-
       bot.attack(target)
-
-      setTimeout(() => {
-        bot.setControlState("jump", false)
-      }, 200)
+      setTimeout(() => bot.setControlState("jump", false), 200)
     }
 
   })
 }
 
-// ================= CHAT =================
-function chatRandom() {
-  if (Math.random() < 0.15) {
-    const msg = chats[Math.floor(Math.random() * chats.length)]
-    bot.chat(msg)
+// ================== CHAT ==================
+const chats = [
+  "ez 😎",
+  "bot here 🤖",
+  "gg",
+  "combat mode",
+  "hi server"
+]
+
+function randomChat() {
+  if (Math.random() < 0.1) {
+    bot.chat(chats[Math.floor(Math.random() * chats.length)])
   }
 }
 
-// ================= START =================
+// ================== START ==================
 startBot()
 
-// ================= WEB SERVER =================
+// ================== EXPRESS KEEP ALIVE ==================
 const app = express()
 
 app.get("/", (req, res) => {
   res.send("bot online")
 })
 
-app.listen(3000, () => {
-  console.log("Web server running")
+const PORT = process.env.PORT || 3000
+
+app.listen(PORT, () => {
+  console.log("Web server running:", PORT)
 })
