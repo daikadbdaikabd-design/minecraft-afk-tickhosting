@@ -7,8 +7,8 @@ let bot = null
 const CONFIG = {
   host: "191.96.231.27",
   port: 10570,
-  username: "Samurai_alien",
-  password: "thien24092012"  // Thêm password vào config
+  username: "BetterSurvivall_",
+  password: "thien100200300emyeu"  // Thêm password vào config
 }
 
 // ================== AUTH STATE ==================
