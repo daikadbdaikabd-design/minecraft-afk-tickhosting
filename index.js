@@ -12,12 +12,12 @@ http.createServer((req, res) => {
 const config = {
     host: "191.96.231.27",
     port: 10570,
-    version: "1.20.1",
-    password: "matkhaucuabomay"  // Thay bằng mật khẩu của bạn
+    version: "1.21.1",
+    password: "matkhaucuaban"  // Thay bằng mật khẩu của bạn
 };
 
 // Tên bot cố định
-const botName = "PauPau_MC";
+const botName = "ProPlayerBot";
 
 console.log('🚀 Bot đang khởi động...');
 console.log(`📡 Server: ${config.host}:${config.port}`);
