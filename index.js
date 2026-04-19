@@ -4,12 +4,12 @@ const express = require("express")
 let bot = null
 
 const chats = [
-  "ez 😎",
-  "tôi là bot 🤖",
+  "ez ",
+  "@4/7 bên em!",
   "gg",
-  "combat mode on",
-  "đừng đánh tôi 😆",
-  "pro player here",
+  "Anh Thiện HT1",
+  "hello server",
+  "auto mode on",
 ]
 
 // ================= START BOT =================
@@ -20,23 +20,17 @@ function startBot() {
   bot = mineflayer.createBot({
     host: "191.96.231.27",
     port: 10570,
-    username: "queen_ItS",
+    username: "Samurai_AlienEmero",
     version: "1.20.1"
   })
 
-  // ===== LOGIN =====
-  bot.on("login", () => {
-    console.log("Bot đã login server")
-  })
-
-  // ===== SPAWN =====
-  bot.on("spawn", () => {
+  bot.once("spawn", () => {
     console.log("Bot đã vào world")
 
     startBrain()
   })
 
-  // ===== AUTO REGISTER / LOGIN =====
+  // AUTO LOGIN / REGISTER
   bot.on("messagestr", (msg) => {
 
     if (msg.includes("/register")) {
@@ -49,116 +43,126 @@ function startBot() {
 
   })
 
-  bot.on("kicked", (reason) => {
-    console.log("Bot bị kick:", reason)
-  })
-
-  bot.on("error", (err) => {
-    console.log("Lỗi:", err.message)
-  })
+  bot.on("kicked", (r) => console.log("Kick:", r))
+  bot.on("error", (e) => console.log("Error:", e.message))
 
   bot.on("end", () => {
-    console.log("Bot mất kết nối, reconnect sau 30s...")
+    console.log("Reconnecting 30s...")
     setTimeout(startBot, 30000)
   })
-
 }
 
-// ================= BOT BRAIN =================
+// ================= SAFE RUN =================
+function safe(fn) {
+  if (!bot || !bot.entity) return
+  fn()
+}
+
+// ================= BRAIN =================
 function startBrain() {
 
-  // 🔁 MAIN LOOP
+  // 🔥 LOOP MAIN (KHÔNG ĐỨNG IM)
   setInterval(() => {
+    safe(() => {
+      move()
+      look()
+      breakBlock()
+      attack()
+      chatRandom()
+    })
+  }, 800)
 
-    if (!bot || !bot.entity) return
-
-    moveRandom()
-    lookRandom()
-    breakBlockFront()
-    attackNearby()
-    randomChat()
-
-  }, 1200)
-
-  // 🦘 ANTI AFK JUMP
+  // 🦘 ANTI AFK + FORCE MOVE
   setInterval(() => {
-    if (!bot) return
+    safe(() => {
 
-    bot.setControlState("jump", true)
+      bot.setControlState("forward", true)
 
-    setTimeout(() => {
-      bot.setControlState("jump", false)
-    }, 200)
+      if (Math.random() < 0.3) {
+        bot.setControlState("sprint", true)
+      } else {
+        bot.setControlState("sprint", false)
+      }
 
-  }, 5000)
+      bot.setControlState("jump", true)
 
+      setTimeout(() => {
+        bot.setControlState("jump", false)
+      }, 200)
+
+    })
+  }, 2000)
 }
 
-// ================= MOVE RANDOM =================
-function moveRandom() {
-  if (!bot.entity) return
+// ================= MOVE =================
+function move() {
+  safe(() => {
 
-  const dir = Math.random()
+    bot.setControlState("forward", true)
 
-  if (dir < 0.25) bot.setControlState("forward", true)
-  else if (dir < 0.5) bot.setControlState("back", true)
-  else {
-    bot.setControlState("forward", false)
-    bot.setControlState("back", false)
-  }
+    // random đổi hướng
+    if (Math.random() < 0.25) {
+      bot.setControlState("left", true)
+      setTimeout(() => bot.setControlState("left", false), 400)
+    }
 
-  if (Math.random() < 0.3) {
-    bot.setControlState("left", true)
-    setTimeout(() => bot.setControlState("left", false), 500)
-  }
+    if (Math.random() < 0.25) {
+      bot.setControlState("right", true)
+      setTimeout(() => bot.setControlState("right", false), 400)
+    }
 
-  if (Math.random() < 0.3) {
-    bot.setControlState("right", true)
-    setTimeout(() => bot.setControlState("right", false), 500)
-  }
+  })
 }
 
-// ================= LOOK RANDOM =================
-function lookRandom() {
-  const yaw = Math.random() * Math.PI * 2
-  const pitch = (Math.random() - 0.5)
-
-  bot.look(yaw, pitch, true)
+// ================= LOOK =================
+function look() {
+  safe(() => {
+    bot.look(
+      Math.random() * Math.PI * 2,
+      (Math.random() - 0.5),
+      true
+    )
+  })
 }
 
-// ================= BREAK BLOCK FRONT =================
-function breakBlockFront() {
-  const block = bot.blockAt(bot.entity.position.offset(1, 0, 0))
-
-  if (block && bot.canDigBlock(block)) {
-    bot.dig(block).catch(() => {})
-  }
+// ================= BREAK BLOCK =================
+function breakBlock() {
+  safe(() => {
+    const b = bot.blockAt(bot.entity.position.offset(1, 0, 0))
+    if (b && bot.canDigBlock(b)) {
+      bot.dig(b).catch(() => {})
+    }
+  })
 }
 
-// ================= ATTACK NEARBY =================
-function attackNearby() {
-  const target = bot.nearestEntity(e =>
-    e.type === "mob" || e.type === "player"
-  )
+// ================= ATTACK =================
+function attack() {
+  safe(() => {
 
-  if (!target) return
+    const target = bot.nearestEntity(e =>
+      e.type === "mob" || e.type === "player"
+    )
 
-  const dist = bot.entity.position.distanceTo(target.position)
+    if (!target) return
 
-  if (dist < 4) {
-    bot.setControlState("jump", true)
+    const dist = bot.entity.position.distanceTo(target.position)
 
-    bot.attack(target)
+    if (dist < 4) {
+      bot.setControlState("jump", true)
 
-    setTimeout(() => {
-      bot.setControlState("jump", false)
-    }, 250)
-  }
+      bot.attack(target)
+
+      setTimeout(() => {
+        bot.setControlState("jump", false)
+      }, 200)
+    }
+
+  })
 }
 
-// ================= CHAT RANDOM =================
-function randomChat() {
-  if (Math.random() < 0.25) {
+// ================= CHAT =================
+function chatRandom() {
+  if (Math.random() < 0.15) {
     const msg = chats[Math.floor(Math.random() * chats.length)]
     bot.chat(msg)
   }
@@ -167,15 +171,13 @@ function randomChat() {
 // ================= START =================
 startBot()
 
-// ================= EXPRESS SERVER =================
+// ================= WEB SERVER =================
 const app = express()
 
 app.get("/", (req, res) => {
   res.send("bot online")
 })
 
-const PORT = process.env.PORT || 3000
-
-app.listen(PORT, () => {
-  console.log("Web server chạy port", PORT)
+app.listen(3000, () => {
+  console.log("Web server running")
 })
