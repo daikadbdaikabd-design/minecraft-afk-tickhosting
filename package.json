@@ -1,5 +1,5 @@
 {
-  "name": "minecraft-afk-bot",
+  "name": "minecraft-afk-tickhosting",
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
