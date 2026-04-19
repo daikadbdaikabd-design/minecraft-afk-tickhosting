@@ -13,7 +13,7 @@ const config = {
     host: "191.96.231.27",
     port: 10570,
     version: "1.21.1",
-    password: "matkhaucuaban"  // Thay bằng mật khẩu của bạn
+    password: "ThienDepZai2409"  // Thay bằng mật khẩu của bạn
 };
 
 // Tên bot cố định
