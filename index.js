@@ -1,6 +1,8 @@
 const mineflayer = require("mineflayer")
 const express = require("express")
 
+let reconnecting = false
+
 function startBot() {
 
   console.log("Đang khởi động bot...")
@@ -30,29 +32,30 @@ function startBot() {
 
   })
 
-  bot.on("kicked", (reason) => {
-    console.log("Bot bị kick:", reason)
+  bot.on("end", () => {
+
+    if (reconnecting) return
+
+    reconnecting = true
+
+    console.log("Mất kết nối, reconnect sau 30s...")
+
+    setTimeout(() => {
+      reconnecting = false
+      startBot()
+    }, 30000)
+
   })
 
   bot.on("error", (err) => {
     console.log("Lỗi:", err.message)
   })
 
-  bot.on("end", () => {
-
-    console.log("Mất kết nối, reconnect sau 30s...")
-
-    setTimeout(() => {
-      startBot()
-    }, 30000)
-
-  })
-
 }
 
 startBot()
 
-// Web server cho UptimeRobot
+// uptime robot
 const app = express()
 
 app.get("/", (req, res) => {
